@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ruleta D'Alembert - PRO Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1b1b1b;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h2, h3 {
+      color: #e2b007;
+      text-align: center;
+      margin-bottom: 5px;
+    }
+    #info-container, #dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0;
+      justify-content: center;
+      max-width: 800px;
+    }
+    .info-card, .dash-card {
+      background-color: #2c2c2c;
+      padding: 15px;
+      border-radius: 10px;
+      flex: 1 1 30%;
+      min-width: 150px;
+      text-align: center;
+      box-shadow: 0 0 8px rgba(226,176,7,0.4);
+    }
+    .info-card h4, .dash-card h4 {
+      margin: 0;
+      color: #e2b007;
+      font-size: 16px;
+    }
+    .info-card div, .dash-card div {
+      margin-top: 8px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:nth-child(1) { background-color: #e2b007; color: #1b1b1b; }
+    button:nth-child(2) { background-color: #607d8b; color: white; }
+    button:nth-child(3) { background-color: #4CAF50; color: white; }
+    button:nth-child(4) { background-color: #f44336; color: white; }
+    #grafico-container, #grafico-dashboard-container {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      max-width: 600px;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #2c2c2c;
+    }
+    th, td {
+      font-size: 13px;
+      border: 1px solid #555;
+      padding: 6px;
+      text-align: center;
+    }
+    th {
+      background-color: #3e3e3e;
+      color: #e2b007;
+    }
+    td {
+      color: #fff;
+    }
+    td.apuesta {
+      background-color: #44475a;
+      font-weight: bold;
+      color: #ffcb6b;
+    }
+    @keyframes flash {
+      0% { background-color: #2c2c2c; }
+      50% { background-color: #e2b007; color: #1b1b1b; }
+      100% { background-color: #2c2c2c; color: #ffffff; }
+    }
+    .flash {
+      animation: flash 0.6s ease;
+    }
+    #tips {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 0.8s ease, opacity 0.8s ease, padding 0.5s ease;
+      background-color: #2c2c2c;
+      padding: 0 15px;
+      border-radius: 10px;
+      margin-top: 10px;
+      max-width: 600px;
+      font-size: 13px;
+      color: #ccc;
+      box-shadow: 0 0 8px rgba(226,176,7,0.4);
+    }
+    #tips.abierto {
+      max-height: 1000px;
+      opacity: 1;
+      padding: 15px;
+    }
+    #mensajeFlotante {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #2c2c2c;
+      color: #fff;
+      padding: 20px 30px;
+      border-radius: 12px;
+      font-size: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.7s ease;
+      z-index: 9999;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Ruleta D'Alembert - PRO Dashboard</h2>
+
+<div class="buttons">
+  <button id="toggleTips" onclick="toggleConsejos()">Tips 🔽</button>
+  <button id="toggleSonido" onclick="toggleSonidos()">Sonido: ON 🔊</button>
+</div>
+
+<div id="info-container">
+  <div class="info-card"><h4>Balance Total</h4><div id="balanceTotal">0€</div></div>
+  <div class="info-card"><h4>Rondas Jugadas</h4><div id="contadorRondas">0</div></div>
+  <div class="info-card"><h4>Próxima Apuesta</h4><div id="proximaApuesta">1€</div></div>
+</div>
+
+<div class="buttons">
+  <button onclick="apostar(true)">Gano</button>
+  <button onclick="apostar(false)">Pierdo</button>
+  <button onclick="reiniciar()">Reiniciar</button>
+</div>
+
+<div id="tips">
+  <h4 style="color: #e2b007; text-align: center; margin-bottom: 10px;">Consejos de Juego</h4>
+  <ul style="padding-left: 20px; list-style-type: disc;">
+    <li>🎯 Si ganas +5€, sales y esperas 20-30 minutos mínimo.</li>
+    <li>🛑 Si pierdes -15€, sales y esperas 1-2 horas mínimo.</li>
+    <li>📈 Nunca juegues más de 3-4 sesiones exitosas por día.</li>
+    <li>⚡ Puedes subir el objetivo a +10€ con cautela tras varias victorias.</li>
+  </ul>
+</div>
+
+<div id="grafico-container">
+  <canvas id="grafico" height="100"></canvas>
+</div>
+
+<h3>Dashboard de Sesiones</h3>
+
+<div id="dashboard">
+  <div class="dash-card"><h4>Sesiones Ganadas</h4><div id="sesionesGanadas">0</div></div>
+  <div class="dash-card"><h4>Sesiones Perdidas</h4><div id="sesionesPerdidas">0</div></div>
+  <div class="dash-card"><h4>Ganancia Acumulada</h4><div id="gananciaAcumulada">0€</div></div>
+  <div class="dash-card"><h4>Probabilidad de Éxito</h4><div id="probabilidadExito">84%</div></div>
+  <div class="dash-card"><h4>Racha Victorias</h4><div id="rachaVictorias">0</div></div>
+  <div class="dash-card"><h4>Racha Máxima</h4><div id="rachaMaxima">0</div></div>
+</div>
+
+<div id="grafico-dashboard-container">
+  <canvas id="graficoDashboard" height="100"></canvas>
+</div>
+
+<table id="tablaResultados">
+  <thead>
+    <tr><th>Fecha y Hora</th><th>Ronda</th><th>Apuesta (€)</th><th>Resultado</th><th>Balance (€)</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- SONIDOS -->
+<audio id="sonidoVictoria" src="https://raw.githubusercontent.com/doblboskia/ruleta/main/impressive.mp3" preload="auto"></audio>
+<audio id="sonidoDerrota" src="https://raw.githubusercontent.com/dobloskia/ruleta/main/rail.mp3" preload="auto"></audio>
+
+
+<!--<audio id="sonidoVictoria" src="impressive.mp3" preload="auto"></audio>
+<audio id="sonidoDerrota" src="rail.mp3" preload="auto"></audio>-->
+
+<div id="mensajeFlotante"></div>
+
+<script>
+
+
+let ronda = 1;
+let apuesta = 1;
+let balance = 0;
+
+const TAKE_PROFIT = 5;
+const STOP_LOSS = -15;
+
+let sesionesGanadas = 0;
+let sesionesPerdidas = 0;
+let gananciaAcumulada = 0;
+let historialSaldos = [];
+let rachaVictorias = 0;
+let rachaMaxima = 0;
+let sonidoActivado = true;
+
+const sonidoVictoria = document.getElementById('sonidoVictoria');
+const sonidoDerrota = document.getElementById('sonidoDerrota');
+
+const ctx = document.getElementById('grafico').getContext('2d');
+const grafico = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Balance (€)',
+      data: [],
+      borderColor: '#e2b007',
+      backgroundColor: 'rgba(226,176,7,0.2)',
+      borderWidth: 2,
+      pointRadius: 3,
+      tension: 0.2
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: { title: { display: true, text: 'Ronda' }},
+      y: { title: { display: true, text: 'Balance (€)' }}
+    }
+  }
+});
+
+const ctxDash = document.getElementById('graficoDashboard').getContext('2d');
+const graficoDashboard = new Chart(ctxDash, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Ganancia por Sesión (€)',
+      data: [],
+      borderColor: '#4CAF50',
+      backgroundColor: 'rgba(76,175,80,0.2)',
+      borderWidth: 2,
+      pointRadius: 3,
+      tension: 0.2
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: { title: { display: true, text: 'Sesión' }},
+      y: { title: { display: true, text: 'Ganancia (€)' }}
+    }
+  }
+});
+
+function obtenerFechaHora() {
+  const ahora = new Date();
+  return ahora.toLocaleString('es-ES');
+}
+
+function animarCambio(idElemento) {
+  const elemento = document.getElementById(idElemento);
+  elemento.classList.remove('flash');
+  void elemento.offsetWidth;
+  elemento.classList.add('flash');
+}
+
+function animarContador(idElemento, valorInicio, valorFinal, duracion = 800) {
+  const elemento = document.getElementById(idElemento);
+  const incremento = (valorFinal - valorInicio) / (duracion / 16);
+  let valorActual = valorInicio;
+
+  const animacion = setInterval(() => {
+    valorActual += incremento;
+    if ((incremento > 0 && valorActual >= valorFinal) || (incremento < 0 && valorActual <= valorFinal)) {
+      valorActual = valorFinal;
+      clearInterval(animacion);
+    }
+    elemento.textContent = valorActual.toFixed(2) + "€";
+  }, 16);
+}
+
+function mostrarMensaje(texto, colorFondo) {
+  const mensaje = document.getElementById("mensajeFlotante");
+  mensaje.textContent = texto;
+  mensaje.style.backgroundColor = colorFondo;
+  mensaje.style.opacity = "1";
+  mensaje.style.transform = "translate(-50%, 0) scale(1.1)";
+
+  setTimeout(() => {
+    mensaje.style.opacity = "0";
+    mensaje.style.transform = "translate(-50%, 0) scale(0.9)";
+  }, 1500);
+}
+
+function actualizarUI() {
+  document.getElementById("proximaApuesta").textContent = apuesta + "€";
+  document.getElementById("balanceTotal").textContent = balance.toFixed(2) + "€";
+  document.getElementById("contadorRondas").textContent = (ronda - 1);
+
+  animarCambio("balanceTotal");
+  animarCambio("proximaApuesta");
+  animarCambio("contadorRondas");
+}
+
+function actualizarDashboard() {
+  document.getElementById("sesionesGanadas").textContent = sesionesGanadas;
+  document.getElementById("sesionesPerdidas").textContent = sesionesPerdidas;
+
+  const gananciaElemento = document.getElementById("gananciaAcumulada");
+  const valorActual = parseFloat(gananciaElemento.textContent.replace("€", "")) || 0;
+  animarContador("gananciaAcumulada", valorActual, gananciaAcumulada);
+
+  document.getElementById("rachaVictorias").textContent = rachaVictorias;
+  document.getElementById("rachaMaxima").textContent = rachaMaxima;
+
+  graficoDashboard.data.labels = historialSaldos.map((_, i) => i + 1);
+  graficoDashboard.data.datasets[0].data = historialSaldos;
+  graficoDashboard.update();
+}
+
+function apostar(gano) {
+  const apuestaActual = apuesta;
+  const resultado = gano ? 'Ganó' : 'Perdió';
+
+  if (gano) {
+    balance += apuestaActual;
+    apuesta = Math.max(apuesta - 1, 1);
+  } else {
+    balance -= apuestaActual;
+    apuesta += 1;
+  }
+
+  const tabla = document.querySelector('#tablaResultados tbody');
+  const fila = document.createElement('tr');
+  const fechaHora = obtenerFechaHora();
+
+  fila.innerHTML = `
+    <td>${fechaHora}</td>
+    <td>${ronda}</td>
+    <td class="apuesta">${apuestaActual}</td>
+    <td>${resultado}</td>
+    <td>${balance.toFixed(2)}</td>
+  `;
+  tabla.appendChild(fila);
+
+  grafico.data.labels.push(ronda);
+  grafico.data.datasets[0].data.push(balance);
+  grafico.update();
+
+  if (balance >= TAKE_PROFIT) {
+    if (sonidoActivado) sonidoVictoria.play();
+    mostrarMensaje("🎉 ¡Ganaste!", "#4CAF50");
+
+    sesionesGanadas++;
+    gananciaAcumulada += TAKE_PROFIT;
+    historialSaldos.push(TAKE_PROFIT);
+    rachaVictorias++;
+
+    if (rachaVictorias > rachaMaxima) {
+      rachaMaxima = rachaVictorias;
+      animarCambio("rachaMaxima");
+    }
+
+    actualizarDashboard();
+    animarCambio("probabilidadExito");
+    animarCambio("sesionesGanadas");
+    animarCambio("rachaVictorias");
+    reiniciar(true);
+  } 
+  else if (balance <= STOP_LOSS) {
+    if (sonidoActivado) sonidoDerrota.play();
+    mostrarMensaje("❌ ¡Perdiste!", "#f44336");
+
+    sesionesPerdidas++;
+    gananciaAcumulada += STOP_LOSS;
+    historialSaldos.push(STOP_LOSS);
+    rachaVictorias = 0;
+
+    actualizarDashboard();
+    animarCambio("sesionesPerdidas");
+    reiniciar(true);
+  } 
+  else {
+    actualizarUI();
+    ronda++;
+  }
+}
+
+function reiniciar(automatica = false) {
+  ronda = 1;
+  apuesta = 1;
+  balance = 0;
+  document.querySelector('#tablaResultados tbody').innerHTML = '';
+  grafico.data.labels = [];
+  grafico.data.datasets[0].data = [];
+  grafico.update();
+  actualizarUI();
+  if (!automatica) {
+    document.querySelectorAll("button").forEach(btn => {
+      btn.disabled = false;
+    });
+  }
+}
+
+function toggleConsejos() {
+  const tips = document.getElementById("tips");
+  const boton = document.getElementById("toggleTips");
+
+  if (tips.classList.contains("abierto")) {
+    tips.classList.remove("abierto");
+    boton.textContent = "Tips 🔽";
+  } else {
+    tips.classList.add("abierto");
+    boton.textContent = "Tips 🔼";
+  }
+}
+
+function toggleSonidos() {
+  const boton = document.getElementById("toggleSonido");
+  sonidoActivado = !sonidoActivado;
+  boton.textContent = sonidoActivado ? "Sonido: ON 🔊" : "Sonido: OFF 🔇";
+}
+
+</script>
+
+</body>
+</html>
+
+
