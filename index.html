@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Ruleta D'Alembert - PRO Dashboard</title>
+  <title>Ruleta Paroli Cauto - PRO Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -62,10 +62,14 @@
       border-radius: 8px;
       cursor: pointer;
     }
-    button:nth-child(1) { background-color: #e2b007; color: #1b1b1b; }
-    button:nth-child(2) { background-color: #607d8b; color: white; }
-    button:nth-child(3) { background-color: #4CAF50; color: white; }
+    button:nth-child(1) { background-color: #e2b007; color: #1b1b1b; } /* Gano / Toggle Tips */
+    button:nth-child(2) { background-color: #607d8b; color: white; } /* Pierdo / Toggle Sonido */
+    button:nth-child(3) { background-color: #4CAF50; color: white; } /* Reiniciar (si es el tercero en el grupo de apuestas) */
     button:nth-child(4) { background-color: #f44336; color: white; }
+    #info-container + .buttons button:nth-child(1) { background-color: #4CAF50; color: white; } /* Botón Gano específico */
+    #info-container + .buttons button:nth-child(2) { background-color: #f44336; color: white; } /* Botón Pierdo específico */
+    #info-container + .buttons button:nth-child(3) { background-color: #607d8b; color: white; } /* Botón Reiniciar específico */
+
     #grafico-container, #grafico-dashboard-container {
       width: 100%;
       max-width: 600px;
@@ -119,7 +123,7 @@
       box-shadow: 0 0 8px rgba(226,176,7,0.4);
     }
     #tips.abierto {
-      max-height: 1000px;
+      max-height: 1000px; /* Suficiente para el contenido */
       opacity: 1;
       padding: 15px;
     }
@@ -140,18 +144,15 @@
     }
   </style>
 </head>
-
 <body>
-
-<h2>Ruleta D'Alembert - PRO Dashboard</h2>
-
+<h2>Ruleta Paroli Cauto - PRO Dashboard</h2>
 <div class="buttons">
   <button id="toggleTips" onclick="toggleConsejos()">Tips 🔽</button>
   <button id="toggleSonido" onclick="toggleSonidos()">Sonido: ON 🔊</button>
 </div>
 
 <div id="info-container">
-  <div class="info-card"><h4>Balance Total</h4><div id="balanceTotal">0€</div></div>
+  <div class="info-card"><h4>Balance Sesión</h4><div id="balanceTotal">0€</div></div>
   <div class="info-card"><h4>Rondas Jugadas</h4><div id="contadorRondas">0</div></div>
   <div class="info-card"><h4>Próxima Apuesta</h4><div id="proximaApuesta">1€</div></div>
 </div>
@@ -159,83 +160,81 @@
 <div class="buttons">
   <button onclick="apostar(true)">Gano</button>
   <button onclick="apostar(false)">Pierdo</button>
-  <button onclick="reiniciar()">Reiniciar</button>
+  <button onclick="reiniciar()">Reiniciar Sesión</button>
 </div>
 
 <div id="tips">
-  <h4 style="color: #e2b007; text-align: center; margin-bottom: 10px;">Consejos de Juego</h4>
+  <h4 style="color: #e2b007; text-align: center; margin-bottom: 10px;">Consejos Estrategia Paroli Cauto</h4>
   <ul style="padding-left: 20px; list-style-type: disc;">
-    <li>🎯 Si ganas +5€, sales y esperas 20-30 minutos mínimo.</li>
-    <li>🛑 Si pierdes -15€, sales y esperas 1-2 horas mínimo.</li>
-    <li>📈 Nunca juegues más de 3-4 sesiones exitosas por día.</li>
-    <li>⚡ Puedes subir el objetivo a +10€ con cautela tras varias victorias.</li>
+    <li>🎯 **Objetivo Principal:** Ganar +5€ y retirarse de la sesión.</li>
+    <li>⏳ **Pausa Post-Objetivo:** Si alcanzas los +5€, espera al menos 20-30 minutos antes de considerar una nueva sesión.</li>
+    <li>🛑 **Stop-Loss Estricto:** Si alcanzas -15€ de pérdida, finaliza la sesión inmediatamente. Espera 1-2 horas (o más) antes de volver a jugar.</li>
+    <li>🎰 **Control de Sesiones:** No excedas un número limitado de sesiones ganadoras al día (ej. 2-3) para evitar la fatiga y la exposición prolongada.</li>
+    <li>⚡ **Naturaleza de la Estrategia:** El Paroli busca capitalizar rachas cortas de victorias. Si no se dan, no fuerces la situación.</li>
+    <li>🇫🇷 **Ventaja Adicional:** Si es posible, juega en Ruleta Francesa con la regla "La Partage" o "En Prison" para reducir la ventaja de la casa en apuestas de dinero par.</li>
   </ul>
 </div>
 
 <div id="grafico-container">
-  <canvas id="grafico" height="100"></canvas>
+  <canvas id="graficoBalanceSesion" height="100"></canvas>
 </div>
 
-<h3>Dashboard de Sesiones</h3>
-
+<h3>Dashboard General</h3>
 <div id="dashboard">
   <div class="dash-card"><h4>Sesiones Ganadas</h4><div id="sesionesGanadas">0</div></div>
   <div class="dash-card"><h4>Sesiones Perdidas</h4><div id="sesionesPerdidas">0</div></div>
-  <div class="dash-card"><h4>Ganancia Acumulada</h4><div id="gananciaAcumulada">0€</div></div>
-  <div class="dash-card"><h4>Probabilidad de Éxito</h4><div id="probabilidadExito">84%</div></div>
-  <div class="dash-card"><h4>Racha Victorias</h4><div id="rachaVictorias">0</div></div>
-  <div class="dash-card"><h4>Racha Máxima</h4><div id="rachaMaxima">0</div></div>
+  <div class="dash-card"><h4>Ganancia Neta Total</h4><div id="gananciaAcumulada">0€</div></div>
+  <div class="dash-card"><h4>% Éxito Sesiones (Ilustrativo)</h4><div id="probabilidadExito">0%</div></div>
+  <div class="dash-card"><h4>Racha Victorias (Sesiones)</h4><div id="rachaVictorias">0</div></div>
+  <div class="dash-card"><h4>Racha Máxima (Sesiones)</h4><div id="rachaMaxima">0</div></div>
 </div>
 
 <div id="grafico-dashboard-container">
-  <canvas id="graficoDashboard" height="100"></canvas>
+  <canvas id="graficoGananciasSesiones" height="100"></canvas>
 </div>
 
 <table id="tablaResultados">
   <thead>
-    <tr><th>Fecha y Hora</th><th>Ronda</th><th>Apuesta (€)</th><th>Resultado</th><th>Balance (€)</th></tr>
+    <tr><th>Fecha y Hora</th><th>Ronda</th><th>Apuesta (€)</th><th>Resultado</th><th>Balance Sesión (€)</th></tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<!-- SONIDOS -->
-<audio id="sonidoVictoria" src="https://raw.githubusercontent.com/Doblboskia/delambert/main/impressive.mp3" preload="auto"></audio>
-<audio id="sonidoDerrota" src="https://raw.githubusercontent.com/Dobloskia/delambert/main/rail.mp3" preload="auto"></audio>
-
-<!--<audio id="sonidoVictoria" src="impressive.mp3" preload="auto"></audio>
-<audio id="sonidoDerrota" src="rail.mp3" preload="auto"></audio>-->
+<audio id="sonidoVictoria" src="https://raw.githubusercontent.com/dobloskia/delambert/main/impressive.mp3" preload="auto"></audio>
+<audio id="sonidoDerrota" src="https://raw.githubusercontent.com/dobloskia/delambert/main/rail.mp3" preload="auto"></audio>
 
 <div id="mensajeFlotante"></div>
 
 <script>
-
-
-let ronda = 1;
-let apuesta = 1;
-let balance = 0;
+let ronda = 0;
+let apuesta = 1; // Apuesta inicial y base para Paroli
+let balanceSesion = 0; // Balance de la sesión actual
+let paroliWins = 0; // Contador de victorias consecutivas para la secuencia Paroli
 
 const TAKE_PROFIT = 5;
 const STOP_LOSS = -15;
 
+// Estadísticas generales
 let sesionesGanadas = 0;
 let sesionesPerdidas = 0;
-let gananciaAcumulada = 0;
-let historialSaldos = [];
-let rachaVictorias = 0;
-let rachaMaxima = 0;
+let gananciaNetaTotal = 0;
+let historialGananciasSesion = []; // Almacena la ganancia/pérdida de cada sesión
+let rachaVictoriasSesiones = 0;
+let rachaMaximaSesiones = 0;
 let sonidoActivado = true;
 
 const sonidoVictoria = document.getElementById('sonidoVictoria');
 const sonidoDerrota = document.getElementById('sonidoDerrota');
 
-const ctx = document.getElementById('grafico').getContext('2d');
-const grafico = new Chart(ctx, {
+// Gráfico Balance Sesión Actual
+const ctxBalance = document.getElementById('graficoBalanceSesion').getContext('2d');
+const graficoBalance = new Chart(ctxBalance, {
   type: 'line',
   data: {
-    labels: [],
+    labels: [], // Rondas
     datasets: [{
-      label: 'Balance (€)',
-      data: [],
+      label: 'Balance Sesión (€)',
+      data: [], // Valores del balance
       borderColor: '#e2b007',
       backgroundColor: 'rgba(226,176,7,0.2)',
       borderWidth: 2,
@@ -252,56 +251,64 @@ const grafico = new Chart(ctx, {
   }
 });
 
-const ctxDash = document.getElementById('graficoDashboard').getContext('2d');
-const graficoDashboard = new Chart(ctxDash, {
-  type: 'line',
+// Gráfico Ganancias por Sesión (Dashboard General)
+const ctxGanancias = document.getElementById('graficoGananciasSesiones').getContext('2d');
+const graficoGanancias = new Chart(ctxGanancias, {
+  type: 'bar', 
   data: {
-    labels: [],
+    labels: [], 
     datasets: [{
-      label: 'Ganancia por Sesión (€)',
-      data: [],
-      borderColor: '#4CAF50',
-      backgroundColor: 'rgba(76,175,80,0.2)',
-      borderWidth: 2,
-      pointRadius: 3,
-      tension: 0.2
+      label: 'Resultado Sesión (€)',
+      data: [], 
+      borderColor: '#4CAF50', // Borde por defecto
+      backgroundColor: '#4CAF50', // Fondo por defecto
+      borderWidth: 1
     }]
   },
   options: {
     responsive: true,
     scales: {
-      x: { title: { display: true, text: 'Sesión' }},
-      y: { title: { display: true, text: 'Ganancia (€)' }}
+      x: { title: { display: true, text: 'Sesión N°' }},
+      y: { title: { display: true, text: 'Resultado (€)' }}
     }
   }
 });
 
 function obtenerFechaHora() {
   const ahora = new Date();
-  return ahora.toLocaleString('es-ES');
+  return ahora.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function animarCambio(idElemento) {
   const elemento = document.getElementById(idElemento);
-  elemento.classList.remove('flash');
-  void elemento.offsetWidth;
-  elemento.classList.add('flash');
+  if (elemento) {
+    elemento.classList.remove('flash');
+    void elemento.offsetWidth; 
+    elemento.classList.add('flash');
+  }
 }
 
-function animarContador(idElemento, valorInicio, valorFinal, duracion = 800) {
+function animarContador(idElemento, valorInicio, valorFinal, duracion = 600) {
   const elemento = document.getElementById(idElemento);
-  const incremento = (valorFinal - valorInicio) / (duracion / 16);
+  if (!elemento) return;
+  const esMoneda = elemento.textContent.includes("€");
   let valorActual = valorInicio;
+  
+  valorFinal = parseFloat(valorFinal);
+  if (isNaN(valorFinal)) valorFinal = valorInicio;
+
+  const incremento = (valorFinal - valorInicio) / (duracion / 16); 
 
   const animacion = setInterval(() => {
     valorActual += incremento;
-    if ((incremento > 0 && valorActual >= valorFinal) || (incremento < 0 && valorActual <= valorFinal)) {
+    if ((incremento > 0 && valorActual >= valorFinal) || (incremento < 0 && valorActual <= valorFinal) || incremento === 0) {
       valorActual = valorFinal;
       clearInterval(animacion);
     }
-    elemento.textContent = valorActual.toFixed(2) + "€";
+    elemento.textContent = esMoneda ? valorActual.toFixed(2) + "€" : Math.round(valorActual);
   }, 16);
 }
+
 
 function mostrarMensaje(texto, colorFondo) {
   const mensaje = document.getElementById("mensajeFlotante");
@@ -313,117 +320,168 @@ function mostrarMensaje(texto, colorFondo) {
   setTimeout(() => {
     mensaje.style.opacity = "0";
     mensaje.style.transform = "translate(-50%, 0) scale(0.9)";
-  }, 1500);
+  }, 2000); 
 }
 
 function actualizarUI() {
   document.getElementById("proximaApuesta").textContent = apuesta + "€";
-  document.getElementById("balanceTotal").textContent = balance.toFixed(2) + "€";
-  document.getElementById("contadorRondas").textContent = (ronda - 1);
+  document.getElementById("balanceTotal").textContent = balanceSesion.toFixed(2) + "€";
+  document.getElementById("contadorRondas").textContent = ronda;
 
-  animarCambio("balanceTotal");
   animarCambio("proximaApuesta");
+  animarCambio("balanceTotal");
   animarCambio("contadorRondas");
 }
 
 function actualizarDashboard() {
   document.getElementById("sesionesGanadas").textContent = sesionesGanadas;
   document.getElementById("sesionesPerdidas").textContent = sesionesPerdidas;
+  
+  const gananciaAcumuladaEl = document.getElementById("gananciaAcumulada");
+  const valorActualGanancia = parseFloat(gananciaAcumuladaEl.textContent.replace("€", "")) || 0;
+  animarContador("gananciaAcumulada", valorActualGanancia, gananciaNetaTotal);
 
-  const gananciaElemento = document.getElementById("gananciaAcumulada");
-  const valorActual = parseFloat(gananciaElemento.textContent.replace("€", "")) || 0;
-  animarContador("gananciaAcumulada", valorActual, gananciaAcumulada);
+  document.getElementById("rachaVictorias").textContent = rachaVictoriasSesiones;
+  document.getElementById("rachaMaxima").textContent = rachaMaximaSesiones;
 
-  document.getElementById("rachaVictorias").textContent = rachaVictorias;
-  document.getElementById("rachaMaxima").textContent = rachaMaxima;
+  const totalSesiones = sesionesGanadas + sesionesPerdidas;
+  const probExito = totalSesiones > 0 ? ((sesionesGanadas / totalSesiones) * 100).toFixed(0) : 0;
+  document.getElementById("probabilidadExito").textContent = probExito + "%";
+  
+  animarCambio("sesionesGanadas");
+  animarCambio("sesionesPerdidas");
+  animarCambio("rachaVictorias");
+  animarCambio("rachaMaxima");
+  animarCambio("probabilidadExito");
 
-  graficoDashboard.data.labels = historialSaldos.map((_, i) => i + 1);
-  graficoDashboard.data.datasets[0].data = historialSaldos;
-  graficoDashboard.update();
+  graficoGanancias.data.labels = historialGananciasSesion.map((_, i) => i + 1);
+  graficoGanancias.data.datasets[0].data = historialGananciasSesion;
+  graficoGanancias.data.datasets[0].backgroundColor = historialGananciasSesion.map(val => val >= 0 ? '#4CAF50' : '#f44336');
+  graficoGanancias.data.datasets[0].borderColor = historialGananciasSesion.map(val => val >= 0 ? '#4CAF50' : '#f44336');
+  graficoGanancias.update();
 }
 
 function apostar(gano) {
+  if (balanceSesion >= TAKE_PROFIT || balanceSesion <= STOP_LOSS) {
+    if (document.getElementById("proximaApuesta").textContent !== "FIN") { // Evitar mensajes repetidos si ya terminó
+        mostrarMensaje("La sesión terminó. Reinicia para jugar.", "#607d8b");
+        document.getElementById("proximaApuesta").textContent = "FIN"; // Asegurar que muestre FIN
+    }
+    return;
+  }
+
+  ronda++;
   const apuestaActual = apuesta;
   const resultado = gano ? 'Ganó' : 'Perdió';
 
   if (gano) {
-    balance += apuestaActual;
-    apuesta = Math.max(apuesta - 1, 1);
-  } else {
-    balance -= apuestaActual;
-    apuesta += 1;
+    balanceSesion += apuestaActual;
+    paroliWins++;
+
+    if (paroliWins === 1) { 
+      apuesta = 2;
+    } else if (paroliWins === 2) { 
+      apuesta = 2; 
+    } else if (paroliWins === 3) { 
+      apuesta = 1; 
+      paroliWins = 0;
+    } else { 
+        apuesta = 1;
+        paroliWins = 0;
+    }
+    if (sonidoActivado) {
+        sonidoVictoria.currentTime = 0; // Reinicia el sonido al principio
+        sonidoVictoria.play();
+    }
+
+  } else { // Perdió
+    balanceSesion -= apuestaActual;
+    apuesta = 1; 
+    paroliWins = 0; 
+    if (sonidoActivado) {
+        sonidoDerrota.currentTime = 0; // Reinicia el sonido al principio
+        sonidoDerrota.play();
+    }
   }
 
+  // Registrar en tabla
   const tabla = document.querySelector('#tablaResultados tbody');
   const fila = document.createElement('tr');
   const fechaHora = obtenerFechaHora();
-
   fila.innerHTML = `
     <td>${fechaHora}</td>
     <td>${ronda}</td>
     <td class="apuesta">${apuestaActual}</td>
     <td>${resultado}</td>
-    <td>${balance.toFixed(2)}</td>
+    <td>${balanceSesion.toFixed(2)}</td>
   `;
-  tabla.appendChild(fila);
+  tabla.insertBefore(fila, tabla.firstChild); 
 
-  grafico.data.labels.push(ronda);
-  grafico.data.datasets[0].data.push(balance);
-  grafico.update();
+  // Actualizar gráfico de balance de sesión
+  graficoBalance.data.labels.push(ronda);
+  graficoBalance.data.datasets[0].data.push(balanceSesion);
+  if (graficoBalance.data.labels.length > 20) { 
+      graficoBalance.data.labels.shift();
+      graficoBalance.data.datasets[0].data.shift();
+  }
+  graficoBalance.update();
 
-  if (balance >= TAKE_PROFIT) {
-    if (sonidoActivado) sonidoVictoria.play();
-    mostrarMensaje("🎉 ¡Ganaste!", "#4CAF50");
-
-    sesionesGanadas++;
-    gananciaAcumulada += TAKE_PROFIT;
-    historialSaldos.push(TAKE_PROFIT);
-    rachaVictorias++;
-
-    if (rachaVictorias > rachaMaxima) {
-      rachaMaxima = rachaVictorias;
-      animarCambio("rachaMaxima");
+  // Comprobar límites de la sesión
+  if (balanceSesion >= TAKE_PROFIT) {
+    balanceSesion = TAKE_PROFIT; 
+    // El sonido de victoria del giro ya sonó si 'gano' fue true.
+    // Si !gano pero se alcanzó TP (muy raro), el sonido de victoria del giro no sonó.
+    // Podríamos añadir un sonido específico de "TAKE PROFIT ALCANZADO" si se desea,
+    // pero la petición actual es sobre el sonido de CADA victoria de giro.
+    if (sonidoActivado && !gano && !sonidoVictoria.ended && sonidoVictoria.currentTime > 0 && !sonidoVictoria.paused) {
+        // No hacer nada si el sonido de victoria ya está sonando por alguna razón muy extraña o si !gano
+    } else if (sonidoActivado && !gano) {
+        // Si !gano y se alcanza TP, podría ser confuso reproducir sonidoVictoria aquí.
+        // Mejor nos centramos en el mensaje visual.
     }
 
+    mostrarMensaje(`🎉 ¡TAKE PROFIT +${TAKE_PROFIT}€! 🎉`, "#4CAF50");
+    
+    sesionesGanadas++;
+    gananciaNetaTotal += balanceSesion; 
+    historialGananciasSesion.push(balanceSesion);
+    rachaVictoriasSesiones++;
+    if (rachaVictoriasSesiones > rachaMaximaSesiones) {
+      rachaMaximaSesiones = rachaVictoriasSesiones;
+    }
     actualizarDashboard();
-    animarCambio("probabilidadExito");
-    animarCambio("sesionesGanadas");
-    animarCambio("rachaVictorias");
-    reiniciar(true);
-  } 
-  else if (balance <= STOP_LOSS) {
-    if (sonidoActivado) sonidoDerrota.play();
-    mostrarMensaje("❌ ¡Perdiste!", "#f44336");
+    document.getElementById("proximaApuesta").textContent = "FIN";
+
+  } else if (balanceSesion <= STOP_LOSS) {
+    balanceSesion = STOP_LOSS;
+    // Similar al caso de TP, el sonido de derrota del giro ya sonó si 'gano' fue false.
+    mostrarMensaje(`❌ STOP LOSS ${STOP_LOSS}€ ❌`, "#f44336");
 
     sesionesPerdidas++;
-    gananciaAcumulada += STOP_LOSS;
-    historialSaldos.push(STOP_LOSS);
-    rachaVictorias = 0;
-
+    gananciaNetaTotal += balanceSesion; 
+    historialGananciasSesion.push(balanceSesion);
+    rachaVictoriasSesiones = 0; 
     actualizarDashboard();
-    animarCambio("sesionesPerdidas");
-    reiniciar(true);
-  } 
-  else {
+    document.getElementById("proximaApuesta").textContent = "FIN";
+
+  } else {
     actualizarUI();
-    ronda++;
   }
 }
 
-function reiniciar(automatica = false) {
-  ronda = 1;
+function reiniciar() {
+  ronda = 0;
   apuesta = 1;
-  balance = 0;
+  balanceSesion = 0;
+  paroliWins = 0;
+  
   document.querySelector('#tablaResultados tbody').innerHTML = '';
-  grafico.data.labels = [];
-  grafico.data.datasets[0].data = [];
-  grafico.update();
+  graficoBalance.data.labels = [];
+  graficoBalance.data.datasets[0].data = [];
+  graficoBalance.update();
+  
   actualizarUI();
-  if (!automatica) {
-    document.querySelectorAll("button").forEach(btn => {
-      btn.disabled = false;
-    });
-  }
+  mostrarMensaje("Nueva Sesión Iniciada", "#607d8b");
 }
 
 function toggleConsejos() {
@@ -443,11 +501,14 @@ function toggleSonidos() {
   const boton = document.getElementById("toggleSonido");
   sonidoActivado = !sonidoActivado;
   boton.textContent = sonidoActivado ? "Sonido: ON 🔊" : "Sonido: OFF 🔇";
+  if (sonidoActivado) mostrarMensaje("Sonido Activado 🔊", "#2c2c2c");
+  else mostrarMensaje("Sonido Desactivado 🔇", "#2c2c2c");
 }
 
-</script>
+// Inicializar UI al cargar
+actualizarUI();
+actualizarDashboard();
 
+</script>
 </body>
 </html>
-
-
